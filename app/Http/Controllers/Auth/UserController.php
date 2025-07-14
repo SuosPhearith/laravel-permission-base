@@ -56,7 +56,7 @@ class UserController extends Controller
 
         //:::::::::::::::::::::::::::::::::::::::::: SORT
         $usersQuery
-            ->with(['role:id,name'])
+            ->with(['roles:id,name'])
             ->orderBy('created_at', $sortDirection);
 
         //:::::::::::::::::::::::::::::::::::::::::: PAGINATION

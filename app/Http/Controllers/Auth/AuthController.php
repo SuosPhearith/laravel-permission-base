@@ -75,6 +75,28 @@ class AuthController extends Controller
         return response()->json([
             'user' => $user,
             'permissions' => $allPermissions,
+            'navigator' => [
+                [
+                    'title' => 'Home',
+                    'to' => ['name' => 'root'],
+                    'icon' => ['icon' => 'tabler-smart-home'],
+                ],
+                [
+                    'title' => 'Product',
+                    'to' => ['name' => 'product'],
+                    'icon' => ['icon' => 'tabler-file'],
+                ],
+                [
+                    'title' => 'User',
+                    'to' => ['name' => 'user'],
+                    'icon' => ['icon' => 'tabler-user-circle'],
+                ],
+                [
+                    'title' => 'Setting',
+                    'to' => ['name' => 'setting'],
+                    'icon' => ['icon' => 'tabler-settings'],
+                ],
+            ]
         ], 200);
     }
 
