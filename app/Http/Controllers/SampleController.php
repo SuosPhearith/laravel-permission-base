@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Auth\Permission;
 use App\Models\Auth\PermissionRole;
 use App\Models\Auth\Role;
 use App\Models\User;
@@ -71,7 +72,7 @@ class SampleController extends Controller
         ], 200);
     }
 
-    public function createRole(Request $request)
+    public function createMany(Request $request)
     {
         try {
 
@@ -118,5 +119,54 @@ class SampleController extends Controller
                 500
             );
         }
+    }
+
+    public function createOne(Request $request)
+    {
+        try {
+            //:::::::::::::::::::::::::::::::::::: VALIDATE
+            $validated = $request->validate([
+                'name'              => 'required|string|min:1|max:100',
+                'permission_id'     => 'required|array|min:1',
+                'permission_id.*'   => 'integer|exists:permissions,id',
+            ]);
+
+            //:::::::::::::::::::::::::::::::::::: CREATE ROLE
+            $newRole = Role::create([
+                'name'          => $validated['name'],
+            ]);
+
+            //:::::::::::::::::::::::::::::::::::: CREATE ROLE PERMISSION
+            foreach ($validated['permission_id'] as $permissionId) {
+                PermissionRole::create([
+                    'permission_id'     => $permissionId,
+                    'role_id'           => $newRole->id,
+                ]);
+            }
+            return response()->json(['message' => 'Created successfully']);
+        } catch (ValidationException $e) {
+            return response()->json(
+                [
+                    'success' => false,
+                    'errors' => $e->errors()
+                ],
+                422
+            );
+        } catch (\Exception $e) {
+            Log::error($e);
+            return response()->json(
+                [
+                    'error' => 'Failed to create'
+                ],
+                500
+            );
+        }
+    }
+
+    public function getById(User $user)
+    {
+        return response()->json([
+            'data' => $user
+        ], 200);
     }
 }

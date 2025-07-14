@@ -9,3 +9,7 @@ Route::delete('role',          [SettingController::class, 'deleteRole']);
 
 Route::get('permission',          [SettingController::class, 'listPermission']);
 Route::get('module',          [SettingController::class, 'listModule']);
+
+//::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: SETUP
+
+Route::get('setup',             [SettingController::class, 'setup']);

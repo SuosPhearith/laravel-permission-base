@@ -46,10 +46,13 @@ class UserController extends Controller
 
         //:::::::::::::::::::::::::::::::::::::::::: FILTER
         if ($roleId) {
-            $usersQuery->where('role_id', $roleId);
+            $usersQuery->whereHas('roles', function ($query) use ($roleId) {
+                $query->where('roles.id', $roleId);
+            });
         }
 
-        if ($isActive) {
+
+        if (!is_null($isActive)) {
             $usersQuery->where('is_active', $isActive);
         }
 
@@ -73,6 +76,76 @@ class UserController extends Controller
             ],
         ], 200);
     }
+
+    public function getUserById(User $user)
+    {
+        $user->load('roles:id');
+
+        $data = $user->toArray();
+        $data['roles'] = $user->roles->pluck('id')->toArray();
+
+        return response()->json([
+            'data' => $data,
+        ], 200);
+    }
+
+    public function deleteUser(Request $request, User $user)
+    {
+        try {
+            $user->delete();
+            return response()->json(['message' => 'Deleted successfully']);
+        } catch (ValidationException $e) {
+            return response()->json(
+                [
+                    'success' => false,
+                    'errors' => $e->errors()
+                ],
+                422
+            );
+        } catch (\Exception $e) {
+            Log::error($e);
+            return response()->json(
+                [
+                    'error' => 'Failed to create'
+                ],
+                500
+            );
+        }
+    }
+
+    public function resetPassword(Request $request, User $user)
+    {
+        try {
+            //:::::::::::::::::::::::::::::::::::: VALIDATE
+            $validated = $request->validate([
+                'new_password'              => 'required|string|min:6|max:30',
+            ]);
+
+            //:::::::::::::::::::::::::::::::::::: UPDATE
+            $user->update([
+                'password'          => Hash::make($validated['new_password']),
+            ]);
+
+            return response()->json(['message' => 'Updated successfully']);
+        } catch (ValidationException $e) {
+            return response()->json(
+                [
+                    'success' => false,
+                    'errors' => $e->errors()
+                ],
+                422
+            );
+        } catch (\Exception $e) {
+            Log::error($e);
+            return response()->json(
+                [
+                    'error' => 'Failed to create'
+                ],
+                500
+            );
+        }
+    }
+
 
     public function createUser(Request $request)
     {
@@ -161,6 +234,34 @@ class UserController extends Controller
             return response()->json([
                 'error' => 'Failed to update user'
             ], 500);
+        }
+    }
+
+    public function toggleStatus(User $user)
+    {
+        try {
+
+            //:::::::::::::::::::::::::::::::::::: update
+            $user->update([
+                'is_active'  => !$user->is_active
+            ]);
+            return response()->json(['message' => 'Updated successfully']);
+        } catch (ValidationException $e) {
+            return response()->json(
+                [
+                    'success' => false,
+                    'errors' => $e->errors()
+                ],
+                422
+            );
+        } catch (\Exception $e) {
+            Log::error($e);
+            return response()->json(
+                [
+                    'error' => 'Failed to create'
+                ],
+                500
+            );
         }
     }
 }

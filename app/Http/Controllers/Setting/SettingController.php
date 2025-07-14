@@ -162,4 +162,21 @@ class SettingController extends Controller
             'data' => $modules
         ], 200);
     }
+
+    public function setup(Request $request)
+    {
+        //:::::::::::::::::::::::::::::::::::: GET
+        $selects = explode(',', $request->query('select', ''));
+
+        $data = [];
+
+        //:::::::::::::::::::::::::::::::::::: CONDITIONAL
+        if (in_array('role', $selects)) {
+            $data['roles'] = Role::select(['id', 'name'])->get();
+        }
+
+        return response()->json([
+            'data' => $data
+        ], 200);
+    }
 }
