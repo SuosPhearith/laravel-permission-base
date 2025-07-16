@@ -16,6 +16,8 @@ use Tymon\JWTAuth\Facades\JWTAuth;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+// :::::::::::::::::::::::::::::::::::::::::::::: 2FA IMPORT
+use PragmaRX\Google2FA\Google2FA;
 
 class AuthController extends Controller
 {
@@ -23,14 +25,13 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $request->validate([
-            'login'    => 'required|string', // email or phone
+            'login'    => 'required|string',
             'password' => 'required|string',
         ]);
 
         $login = $request->input('login');
         $password = $request->input('password');
 
-        // Find user by email or phone_number
         $user = User::where('email', $login)
             ->orWhere('phone_number', $login)
             ->first();
@@ -39,8 +40,20 @@ class AuthController extends Controller
             return response()->json(['error' => 'Invalid credentials'], 401);
         }
 
-        $token = JWTAuth::fromUser($user);
+        if ($user->enable_2fa) {
+            // Generate random key and store it temporarily
+            $key = Str::random(64);
+            $user->two_factor_key = $key;
+            $user->save();
 
+            return response()->json([
+                'verify' => true,
+                'two_factor_key' => $key,
+            ]);
+        }
+
+        // 2FA not enabled, issue token immediately
+        $token = JWTAuth::fromUser($user);
         DB::table('sessions')->insert([
             'id' => Str::uuid()->toString(),
             'user_id' => $user->id,
@@ -49,8 +62,8 @@ class AuthController extends Controller
             'payload' => '',
             'last_activity' => now()->timestamp,
         ]);
-
         return response()->json([
+            'verify' => false,
             'access_token' => $token,
             'token_type' => 'bearer',
         ]);
@@ -237,5 +250,73 @@ class AuthController extends Controller
                 'error' => 'Failed to update',
             ], 500);
         }
+    }
+
+
+    //::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: 2FA WITH GOOGLE
+
+    public function setup2FA()
+    {
+        $user = JWTAuth::parseToken()->authenticate();
+        $google2fa = new Google2FA();
+
+        // Generate and store secret
+        $secret = $google2fa->generateSecretKey();
+        $user->google2fa_secret = $secret;
+        $user->enable_2fa = true;
+        $user->save();
+
+        // Generate QR code URL
+        $qrCodeUrl = $google2fa->getQRCodeUrl(
+            'PHARMACY - CALMETTE',
+            $user->email,
+            $secret
+        );
+
+        DB::table('sessions')->where('user_id', $user->id)->delete();
+
+        return response()->json([
+            'otpauth_url' => $qrCodeUrl
+        ]);
+    }
+
+    public function verify2FA(Request $request)
+    {
+        $request->validate([
+            'two_factor_key' => 'required|string',
+            'otp' => 'required|string',
+        ]);
+
+        // Find user by key
+        $user = User::where('two_factor_key', $request->two_factor_key)->first();
+
+        if (!$user) {
+            return response()->json(['message' => 'Invalid or expired 2FA key'], 403);
+        }
+
+        $google2fa = new Google2FA();
+
+        if (!$google2fa->verifyKey($user->google2fa_secret, $request->otp)) {
+            return response()->json(['message' => 'Invalid OTP'], 422);
+        }
+
+        // OTP valid — clear key and issue token
+        $user->two_factor_key = null;
+        $user->save();
+
+        $token = JWTAuth::fromUser($user);
+        DB::table('sessions')->insert([
+            'id' => Str::uuid()->toString(),
+            'user_id' => $user->id,
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+            'payload' => '',
+            'last_activity' => now()->timestamp,
+        ]);
+        return response()->json([
+            'message' => '2FA verified successfully',
+            'access_token' => $token,
+            'token_type' => 'bearer',
+        ]);
     }
 }

@@ -21,7 +21,12 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             // :::::::::::::::::::::::::::::::::::::::::::::::: FIELD
             $table->string('avatar')->nullable();
-            // :::::::::::::::::::::::::::::::::::::::::::::::: FIELD
+            // :::::::::::::::::::::::::::::::::::::::::::::::: 2FA
+            $table->boolean('enable_2fa')->default(false);
+            $table->string("google2fa_secret")->nullable();
+            $table->timestamp("two_factor_verified_at")->nullable();
+            $table->string('two_factor_key')->nullable();
+            // :::::::::::::::::::::::::::::::::::::::::::::::: 2FA
             $table->rememberToken();
             $table->foreignId('created_by')->nullable()->constrained('users');
             $table->foreignId('updated_by')->nullable()->constrained('users');
