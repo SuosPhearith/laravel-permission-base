@@ -20,11 +20,12 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $user = User::factory()->create([
-            'id'        => 1,
-            'name'      => 'suosphearith',
-            'email'     => 'suosphearith@gmail.com',
-            'is_active' => 1,
-            'password'  => Hash::make('123456'),
+            'id'                => 1,
+            'name'              => 'SUOS PHEARITH',
+            'email'             => 'suosphearith@gmail.com',
+            'phone_number'      => '069265958',
+            'is_active'         => 1,
+            'password'          => Hash::make('123456'),
         ]);
 
         DB::table('user_role')->insertGetId(

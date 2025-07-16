@@ -4,6 +4,7 @@ use App\Http\Controllers\Setting\SettingController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('role',             [SettingController::class, 'listRole']);
+Route::get('role/permission',             [SettingController::class, 'getRoleWithPermission']);
 Route::get('role/{role}',             [SettingController::class, 'getRoleById']);
 Route::post('role',            [SettingController::class, 'createRole']);
 Route::put('role/{role}/toggle-status',            [SettingController::class, 'toggleRole']);

@@ -50,6 +50,22 @@ class SettingController extends Controller
         }
     }
 
+    public function getRoleWithPermission()
+    {
+        $roles = Role::with(['permissions:id'])->select(['id', 'name'])->get();
+
+        $data = $roles->map(function ($role) {
+            return [
+                'id' => $role->id,
+                'name' => $role->name,
+                'permission_ids' => $role->permissions->pluck('id')->toArray(),
+            ];
+        });
+
+        return response()->json(['data' => $data], 200);
+    }
+
+
     public function listRole(Request $request)
     {
         //:::::::::::::::::::::::::::::::::::::::::: GET FILTER

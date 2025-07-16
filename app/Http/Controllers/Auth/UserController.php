@@ -157,18 +157,20 @@ class UserController extends Controller
 
             //:::::::::::::::::::::::::::::::::::: VALIDATE
             $validated = $request->validate([
-                'name'      => 'required|string|min:3|max:100',
-                'email'     => 'required|email|unique:users,email',
-                'password'  => 'required|string|min:6|max:30',
-                'role_id'   => 'required|array|min:1',
-                'role_id.*' => 'integer|exists:roles,id',
+                'name'              => 'required|string|min:3|max:100',
+                'email'             => 'required|email|unique:users,email',
+                'phone_number'      => 'required|string|min:9|max:12',
+                'password'          => 'required|string|min:6|max:30',
+                'role_id'           => 'required|array|min:1',
+                'role_id.*'         => 'integer|exists:roles,id',
             ]);
 
             //:::::::::::::::::::::::::::::::::::: CREATE USER
             $newUser = User::create([
-                'name'     => $validated['name'],
-                'email'    => $validated['email'],
-                'password' => Hash::make($validated['password']),
+                'name'              => $validated['name'],
+                'email'             => $validated['email'],
+                'phone_number'      => $validated['phone_number'],
+                'password'          => Hash::make($validated['password']),
             ]);
 
             //:::::::::::::::::::::::::::::::::::: ASSIGN ROLES TO USER
@@ -203,15 +205,17 @@ class UserController extends Controller
 
             //:::::::::::::::::::::::::::::::::::: VALIDATE
             $validated = $request->validate([
-                'name'      => 'required|string|min:3|max:100',
-                'email'     => 'required|email|unique:users,email,' . $user->id . ',id',
-                'role_id'   => 'nullable|array',
-                'role_id.*' => 'integer|exists:roles,id',
+                'name'          => 'required|string|min:3|max:100',
+                'email'         => 'required|email|unique:users,email,' . $user->id . ',id',
+                'phone_number'  => 'required|string|min:9|max:12|unique:users,phone_number,' . $user->id . ',id',
+                'role_id'       => 'nullable|array',
+                'role_id.*'     => 'integer|exists:roles,id',
             ]);
 
             //:::::::::::::::::::::::::::::::::::: UPDATE USER
-            $user->name = $validated['name'];
-            $user->email = $validated['email'];
+            $user->name         = $validated['name'];
+            $user->email        = $validated['email'];
+            $user->phone_number = $validated['phone_number'];
             $user->save();
 
             //:::::::::::::::::::::::::::::::::::: SYNC ROLES
@@ -314,7 +318,7 @@ class UserController extends Controller
 
             //:::::::::::::::::::::::::::::::::::: VALIDATE
             $validated = $request->validate([
-                'permission_id'     => 'required|array|min:1',
+                'permission_id'     => 'nullable|array',
                 'permission_id.*'   => 'integer|exists:permissions,id',
             ]);
 

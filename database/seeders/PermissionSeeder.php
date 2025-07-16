@@ -13,7 +13,7 @@ class PermissionSeeder extends Seeder
      */
     public function run(): void
     {
-        // Seed Modules
+        //::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: Seed Modules
         $userModuleId = DB::table('modules')->insertGetId(
             [
                 'id'            => 1,
@@ -32,9 +32,27 @@ class PermissionSeeder extends Seeder
             ]
         );
 
-        // Seed Permissions
+        $homeModuleId = DB::table('modules')->insertGetId(
+            [
+                'id'            => 3,
+                'name'          => 'Home Management',
+                'created_at'    => Carbon::now(),
+                'updated_at'    => Carbon::now(),
+            ]
+        );
+
+        $productModuleId = DB::table('modules')->insertGetId(
+            [
+                'id'            => 4,
+                'name'          => 'Product Management',
+                'created_at'    => Carbon::now(),
+                'updated_at'    => Carbon::now(),
+            ]
+        );
+
+        //::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: Seed Permissions
         $permissions = [
-            ['name' => 'view-users',                        'module_id' => $userModuleId],      // USER
+            ['name' => 'view-users',                        'module_id' => $userModuleId],      // USER ::: MAIN
             ['name' => 'create-users',                      'module_id' => $userModuleId],      // USER
             ['name' => 'edit-users',                        'module_id' => $userModuleId],      // USER
             ['name' => 'delete-users',                      'module_id' => $userModuleId],      // USER
@@ -43,9 +61,15 @@ class PermissionSeeder extends Seeder
             ['name' => 'reset-password-users',              'module_id' => $userModuleId],      // USER
             ['name' => 'ban-users',                         'module_id' => $userModuleId],      // USER
 
-            ['name' => 'view-role-setting',                 'module_id' => $settingModuleId],   // SETTING
-            ['name' => 'create-role-setting',               'module_id' => $settingModuleId],   // SETTING
-            ['name' => 'delete-role-setting',               'module_id' => $settingModuleId],   // SETTING
+            ['name' => 'view-setting',                      'module_id' => $settingModuleId],   // SETTING ::: MAIN
+
+            ['name' => 'view-role-setting',                 'module_id' => $settingModuleId],   // ROLE SETTING ::: MAIN
+            ['name' => 'view-module-setting',               'module_id' => $settingModuleId],   // MODULE SETTING ::: MAIN
+            ['name' => 'view-config-setting',               'module_id' => $settingModuleId],   // CONFIG SETTING ::: MAIN
+
+            ['name' => 'view-home',                         'module_id' => $homeModuleId],      // HOME ::: MAIN
+
+            ['name' => 'view-product',                      'module_id' => $productModuleId],   // PRODUCT ::: MAIN
         ];
 
         foreach ($permissions as $permission) {
@@ -69,7 +93,6 @@ class PermissionSeeder extends Seeder
         );
 
         $permissionIds = DB::table('permissions')
-            ->where('module_id', $userModuleId)
             ->pluck('id')
             ->toArray();
 

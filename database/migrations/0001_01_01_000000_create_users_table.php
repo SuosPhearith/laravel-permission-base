@@ -15,9 +15,13 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('email')->unique();
+            $table->string('phone_number')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->boolean('is_active')->default(true);
+            // :::::::::::::::::::::::::::::::::::::::::::::::: FIELD
+            $table->string('avatar')->nullable();
+            // :::::::::::::::::::::::::::::::::::::::::::::::: FIELD
             $table->rememberToken();
             $table->foreignId('created_by')->nullable()->constrained('users');
             $table->foreignId('updated_by')->nullable()->constrained('users');
