@@ -11,7 +11,8 @@ Route::get('/', function () {
 
 Route::prefix('v1')->group(function () {
 
-    Route::post('auth/login', [AuthController::class, 'login']);
+    Route::post('auth/login',       [AuthController::class, 'login']);
+    Route::post('auth/2fa/verify',  [AuthController::class, 'verify2FA']);
 
     Route::middleware(['authentication.jwt.auth'])->group(function () {
         Route::prefix('pharmacy')->group(function () {

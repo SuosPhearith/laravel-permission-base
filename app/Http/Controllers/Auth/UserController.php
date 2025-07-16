@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
+use PragmaRX\Google2FAQRCode\Google2FA;
 
 class UserController extends Controller
 {
@@ -388,5 +389,40 @@ class UserController extends Controller
                 'user_permissions' => $userPermissions,
             ]
         ], 200);
+    }
+
+    public function enable2FA(User $user)
+    {
+        $google2fa = new Google2FA();
+
+        // Generate and store secret
+        $secret = $google2fa->generateSecretKey();
+        $user->google2fa_secret = $secret;
+        $user->enable_2fa = true;
+        $user->save();
+
+        // Delete all sessions
+        DB::table('sessions')->where('user_id', $user->id)->delete();
+
+        // Generate QR code URL
+        $qrCodeUrl = $google2fa->getQRCodeUrl(
+            'PHARMACY - CALMETTE',
+            $user->email,
+            $secret
+        );
+
+        return response()->json([
+            'otpauth_url' => $qrCodeUrl
+        ]);
+    }
+
+    public function disable2FA(User $user)
+    {
+        $user->google2fa_secret = '';
+        $user->enable_2fa = false;
+        $user->save();
+        return response()->json([
+            'message' => 'Updated Successfully'
+        ]);
     }
 }

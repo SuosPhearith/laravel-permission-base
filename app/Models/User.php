@@ -26,6 +26,10 @@ class User extends Authenticatable implements JWTSubject
         'role_id',
         'avatar',
         'is_active',
+        'enable_2fa',
+        'google2fa_secret',
+        'two_factor_verified_at',
+        'two_factor_key',
         'created_by',
         'updated_by',
         'deleted_by',
@@ -34,6 +38,8 @@ class User extends Authenticatable implements JWTSubject
     protected $hidden = [
         'password',
         'remember_token',
+        'google2fa_secret',
+        'two_factor_key'
     ];
 
     protected function casts(): array
@@ -42,6 +48,7 @@ class User extends Authenticatable implements JWTSubject
             'email_verified_at' => 'datetime',
             'password'          => 'hashed',
             'is_active'         => 'boolean',
+            'enable_2fa'         => 'boolean',
         ];
     }
 

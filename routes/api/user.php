@@ -14,3 +14,6 @@ Route::put('/{user}/reset-password',                    [UserController::class, 
 Route::put('/{user}/toggle-status',                     [UserController::class, 'toggleStatus']);
 Route::post('/{user}/{permission}/add-permission',      [UserController::class, 'addNewPermission']);
 Route::put('/{user}/update-permission',                 [UserController::class, 'updateUserPermission']);
+
+Route::put('/{user}/enable-2fa',                        [UserController::class, 'enable2FA']);
+Route::put('/{user}/disable-2fa',                       [UserController::class, 'disable2FA']);
