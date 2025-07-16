@@ -56,7 +56,12 @@ class User extends Authenticatable implements JWTSubject
     public function hasPermission(string $permissionName): bool
     {
         //::::::::::::::::::::::::::::::::::::: GET USER ROLE IDs
-        $roleIds = UserRole::where('user_id', $this->id)->pluck('role_id');
+        $roleIds = UserRole::where('user_id', $this->id)
+            ->whereHas('role', function ($query) {
+                $query->where('is_active', true)
+                    ->whereNull('deleted_at');
+            })
+            ->pluck('role_id');
 
         //::::::::::::::::::::::::::::::::::::: GET PERMISSION IDs FROM ROLES
         $permissionIdsFromRoles = PermissionRole::whereIn('role_id', $roleIds)->pluck('permission_id');
@@ -67,9 +72,13 @@ class User extends Authenticatable implements JWTSubject
         //::::::::::::::::::::::::::::::::::::: MERGE AND REMOVE DUPLICATES
         $allPermissionIds = $permissionIdsFromRoles->merge($permissionIdsFromUser)->unique();
 
-        //::::::::::::::::::::::::::::::::::::: CHECK IF ANY MATCHES BY NAME
+        //::::::::::::::::::::::::::::::::::::: CHECK BY NAME & ACTIVE FLAGS
         return Permission::whereIn('id', $allPermissionIds)
             ->where('name', $permissionName)
+            ->where('is_active', true)
+            ->whereHas('module', function ($query) {
+                $query->where('is_active', true);
+            })
             ->exists();
     }
 

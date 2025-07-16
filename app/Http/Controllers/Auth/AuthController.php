@@ -52,17 +52,46 @@ class AuthController extends Controller
         $user = JWTAuth::parseToken()->authenticate();
 
         //::::::::::::::::::::::::::::::::::::: GET USER ROLE IDs
-        $roleIds = UserRole::where('user_id', $user->id)->pluck('role_id');
+        $roleIds = UserRole::where('user_id', $user->id)
+            ->whereHas('role', function ($query) {
+                $query->where('is_active', true)
+                    ->whereNull('deleted_at');
+            })
+            ->pluck('role_id');
 
         //::::::::::::::::::::::::::::::::::::: GET PERMISSIONS FROM ROLES
         $rolePermissionNames = PermissionRole::whereIn('role_id', $roleIds)
-            ->with('permission:id,name')
+            ->whereHas('permission', function ($query) {
+                $query->where('is_active', true)
+                    ->whereHas('module', function ($q) {
+                        $q->where('is_active', true);
+                    });
+            })
+            ->with(['permission' => function ($query) {
+                $query->select('id', 'name')
+                    ->where('is_active', true)
+                    ->whereHas('module', function ($q) {
+                        $q->where('is_active', true);
+                    });
+            }])
             ->get()
             ->pluck('permission.name');
 
         //::::::::::::::::::::::::::::::::::::: GET DIRECT USER PERMISSIONS
         $userPermissionNames = UserPermission::where('user_id', $user->id)
-            ->with('permission:id,name')
+            ->whereHas('permission', function ($query) {
+                $query->where('is_active', true)
+                    ->whereHas('module', function ($q) {
+                        $q->where('is_active', true);
+                    });
+            })
+            ->with(['permission' => function ($query) {
+                $query->select('id', 'name')
+                    ->where('is_active', true)
+                    ->whereHas('module', function ($q) {
+                        $q->where('is_active', true);
+                    });
+            }])
             ->get()
             ->pluck('permission.name');
 
@@ -83,27 +112,24 @@ class AuthController extends Controller
                 ],
                 [
                     'title' => 'Product',
-                    'to' => ['name' => 'product'],
+                    'to' => ['name' => 'products'],
                     'icon' => ['icon' => 'tabler-file'],
                 ],
                 [
                     'title' => 'User',
-                    'to' => ['name' => 'user'],
+                    'to' => ['name' => 'users'],
                     'icon' => ['icon' => 'tabler-user-circle'],
                 ],
                 [
                     'title' => 'Setting',
-                    'to' => ['name' => 'setting'],
                     'icon' => ['icon' => 'tabler-settings'],
+                    'children' => [
+                        ['title' => "Role", 'to' => "settings-role"],
+                        ['title' => "Permission", 'to' => "settings-permission"],
+                        ['title' => "Config", 'to' => "settings-config"],
+                    ],
                 ],
             ]
         ], 200);
-    }
-
-
-    public function logoutUser(User $user)
-    {
-        DB::table('sessions')->where('user_id', $user->id)->delete();
-        return response()->json(['message' => 'Successfully logged out']);
     }
 }

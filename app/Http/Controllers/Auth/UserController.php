@@ -3,7 +3,10 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\Auth\Module;
+use App\Models\Auth\Permission;
 use App\Models\Auth\PermissionRole;
+use App\Models\Auth\Role;
 use App\Models\Auth\UserPermission;
 use App\Models\Auth\UserRole;
 use App\Models\User;
@@ -202,7 +205,7 @@ class UserController extends Controller
             $validated = $request->validate([
                 'name'      => 'required|string|min:3|max:100',
                 'email'     => 'required|email|unique:users,email,' . $user->id . ',id',
-                'role_id'   => 'required|array|min:1',
+                'role_id'   => 'nullable|array',
                 'role_id.*' => 'integer|exists:roles,id',
             ]);
 
@@ -213,11 +216,14 @@ class UserController extends Controller
 
             //:::::::::::::::::::::::::::::::::::: SYNC ROLES
             UserRole::where('user_id', $user->id)->delete();
-            foreach ($validated['role_id'] as $roleId) {
-                UserRole::create([
-                    'user_id' => $user->id,
-                    'role_id' => $roleId,
-                ]);
+
+            if (!empty($validated['role_id'])) {
+                foreach ($validated['role_id'] as $roleId) {
+                    UserRole::create([
+                        'user_id' => $user->id,
+                        'role_id' => $roleId,
+                    ]);
+                }
             }
 
             DB::commit();
@@ -236,6 +242,7 @@ class UserController extends Controller
             ], 500);
         }
     }
+
 
     public function toggleStatus(User $user)
     {
@@ -263,5 +270,119 @@ class UserController extends Controller
                 500
             );
         }
+    }
+
+    public function logoutUser(User $user)
+    {
+        DB::table('sessions')->where('user_id', $user->id)->delete();
+        return response()->json(['message' => 'Successfully logged out']);
+    }
+
+    public function addNewPermission(User $user, Permission $permission)
+    {
+        try {
+
+            //:::::::::::::::::::::::::::::::::::: update
+            UserPermission::create([
+                'user_id' => $user->id,
+                'permission_id' => $user->id,
+            ]);
+            return response()->json(['message' => 'Created successfully']);
+        } catch (ValidationException $e) {
+            return response()->json(
+                [
+                    'success' => false,
+                    'errors' => $e->errors()
+                ],
+                422
+            );
+        } catch (\Exception $e) {
+            Log::error($e);
+            return response()->json(
+                [
+                    'error' => 'Failed to create'
+                ],
+                500
+            );
+        }
+    }
+
+    public function updateUserPermission(Request $request, User $user)
+    {
+        try {
+            DB::beginTransaction();
+
+            //:::::::::::::::::::::::::::::::::::: VALIDATE
+            $validated = $request->validate([
+                'permission_id'     => 'required|array|min:1',
+                'permission_id.*'   => 'integer|exists:permissions,id',
+            ]);
+
+            //:::::::::::::::::::::::::::::::::::: DELETE OLD PERMISSIONS
+            UserPermission::where('user_id', $user->id)->delete();
+
+            //:::::::::::::::::::::::::::::::::::: INSERT NEW PERMISSIONS
+            foreach ($validated['permission_id'] as $permissionId) {
+                UserPermission::create([
+                    'user_id' => $user->id,
+                    'permission_id' => $permissionId,
+                ]);
+            }
+
+            DB::commit();
+
+            return response()->json(['message' => 'Updated successfully']);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error($e);
+            return response()->json([
+                'error' => 'Failed to update'
+            ], 500);
+        }
+    }
+
+    public function getUserPermission(User $user)
+    {
+        //::::::::::::::::::::::::::::::::::::: Get user direct permission IDs
+        $userPermissions = UserPermission::where('user_id', $user->id)->pluck('permission_id');
+
+        //::::::::::::::::::::::::::::::::::::: Get user role permission IDs
+        $userRoleIds = UserRole::where('user_id', $user->id)->pluck('role_id');
+        $rolePermissionIds = PermissionRole::whereIn('role_id', $userRoleIds)
+            ->pluck('permission_id')
+            ->unique();
+
+        //::::::::::::::::::::::::::::::::::::: Load all active modules with their permissions
+        $modules = Module::where('is_active', true)
+            ->with(['permissions' => function ($query) {
+                $query->where('is_active', true);
+            }])
+            ->get();
+
+        //::::::::::::::::::::::::::::::::::::: Map and group permissions under each module
+        $grouped = $modules->map(function ($module) use ($rolePermissionIds) {
+            return [
+                'module' => $module->name,
+                'permissions' => $module->permissions->map(function ($permission) use ($rolePermissionIds) {
+                    return [
+                        'id' => $permission->id,
+                        'name' => $permission->name,
+                        'disabled' => $rolePermissionIds->contains($permission->id),
+                    ];
+                }),
+            ];
+        });
+
+        return response()->json([
+            'data' => [
+                'permissions' => $grouped,
+                'user_permissions' => $userPermissions,
+            ]
+        ], 200);
     }
 }

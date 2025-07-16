@@ -10,13 +10,21 @@ use Illuminate\Notifications\Notifiable;
 
 class Role extends Model
 {
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, SoftDeletes;
 
     protected $table = 'roles';
 
     protected $fillable = [
         'name',
+        'is_active'
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'is_active'         => 'boolean',
+        ];
+    }
 
     public function permissions()
     {

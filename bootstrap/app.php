@@ -16,6 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'authentication.jwt.auth' => \App\Http\Middleware\Authentication::class,
             'can' => \App\Http\Middleware\Authorization::class,
         ]);
+        $middleware->append(\Illuminate\Http\Middleware\HandleCors::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

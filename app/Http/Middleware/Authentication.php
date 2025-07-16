@@ -15,9 +15,9 @@ class Authentication
         try {
             $user = JWTAuth::parseToken()->authenticate();
 
-            if (!$user || !$user->is_active) {
-                return response()->json(['error' => 'Unauthorized or inactive user'], 403);
-            }
+            // if (!$user || !$user->is_active) {
+            //     return response()->json(['error' => 'Unauthorized or inactive user'], 403);
+            // }
 
             // Check if user has a valid session in the DB
             $hasSession = DB::table('sessions')

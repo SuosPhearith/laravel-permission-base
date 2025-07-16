@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('modules', function (Blueprint $table) {
             $table->id();
+            $table->boolean('is_active')->default(true);
             $table->string('name')->unique();
             $table->timestamps();
         });
@@ -20,6 +21,7 @@ return new class extends Migration
         Schema::create('permissions', function (Blueprint $table) {
             $table->id();
             $table->string('name')->unique();
+            $table->boolean('is_active')->default(true);
             $table->foreignId('module_id')->constrained("modules")->onDelete('cascade');
             $table->timestamps();
         });
@@ -27,6 +29,8 @@ return new class extends Migration
         Schema::create('roles', function (Blueprint $table) {
             $table->id();
             $table->string('name')->unique();
+            $table->boolean('is_active')->default(true);
+            $table->timestamp("deleted_at")->nullable();
             $table->timestamps();
         });
 
