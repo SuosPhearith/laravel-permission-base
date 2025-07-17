@@ -41,15 +41,11 @@ class AuthController extends Controller
         }
 
         if ($user->enable_2fa) {
-            // Generate random key and store it temporarily
-            $key = Str::random(64);
+            $randomKey = Str::random(32);
+            $expiresAt = now()->addMinutes(10)->timestamp;
+            $key = "{$randomKey}-{$expiresAt}";
             $user->two_factor_key = $key;
             $user->save();
-
-            return response()->json([
-                'verify' => true,
-                'two_factor_key' => $key,
-            ]);
         }
 
         // 2FA not enabled, issue token immediately
@@ -63,9 +59,10 @@ class AuthController extends Controller
             'last_activity' => now()->timestamp,
         ]);
         return response()->json([
-            'verify' => false,
+            'verify' => $user->enable_2fa ? true : false,
             'access_token' => $token,
             'token_type' => 'bearer',
+            'two_factor_key' => $key ?? null,
         ]);
     }
 
@@ -156,9 +153,10 @@ class AuthController extends Controller
             $navigator[] = [
                 'title' => 'User',
                 'to' => ['name' => 'users'],
-                'icon' => ['icon' => 'tabler-user-circle'],
+                'icon' => ['icon' => 'tabler-users'],
             ];
         }
+
 
         if ($allPermissions->contains('view-setting')) {
             $children = [];
@@ -183,6 +181,14 @@ class AuthController extends Controller
                     'children' => $children,
                 ];
             }
+        }
+
+        if ($allPermissions->contains('view-users')) {
+            $navigator[] = [
+                'title' => 'Account',
+                'to' => ['name' => 'account'],
+                'icon' => ['icon' => 'tabler-user-circle'],
+            ];
         }
 
         return response()->json([
@@ -300,23 +306,40 @@ class AuthController extends Controller
             return response()->json(['message' => 'Invalid OTP'], 422);
         }
 
-        // OTP valid — clear key and issue token
-        $user->two_factor_key = null;
-        $user->save();
+        [$actualKey, $timestamp] = explode('-', $request->two_factor_key);
 
-        $token = JWTAuth::fromUser($user);
-        DB::table('sessions')->insert([
-            'id' => Str::uuid()->toString(),
-            'user_id' => $user->id,
-            'ip_address' => $request->ip(),
-            'user_agent' => $request->userAgent(),
-            'payload' => '',
-            'last_activity' => now()->timestamp,
-        ]);
-        return response()->json([
-            'message' => '2FA verified successfully',
-            'access_token' => $token,
-            'token_type' => 'bearer',
-        ]);
+        if (now()->timestamp > (int) $timestamp) {
+            return response()->json(['message' => '2FA key has expired'], 401);
+        }
+
+        // Transaction: clear key, save user, create session
+        try {
+            DB::beginTransaction();
+
+            $user->two_factor_key = null;
+            $user->save();
+
+            $token = JWTAuth::fromUser($user);
+
+            DB::table('sessions')->insert([
+                'id' => Str::uuid()->toString(),
+                'user_id' => $user->id,
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+                'payload' => '',
+                'last_activity' => now()->timestamp,
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'message' => '2FA verified successfully',
+                'access_token' => $token,
+                'token_type' => 'bearer',
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['message' => 'Something went wrong during 2FA verification'], 500);
+        }
     }
 }

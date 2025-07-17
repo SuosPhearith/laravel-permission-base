@@ -15,9 +15,9 @@ class Authentication
         try {
             $user = JWTAuth::parseToken()->authenticate();
 
-            // if (!$user || !$user->is_active) {
-            //     return response()->json(['error' => 'Unauthorized or inactive user'], 403);
-            // }
+            if (!$user || !$user->is_active) {
+                return response()->json(['error' => 'Unauthorized or inactive user'], 401);
+            }
 
             // Check if user has a valid session in the DB
             $hasSession = DB::table('sessions')
@@ -29,9 +29,19 @@ class Authentication
                 return response()->json(['error' => 'Session expired or not found'], 401);
             }
 
+            $excludedRoutes = [
+                'verify_2fa',
+                'me'
+            ];
+
+            if (!in_array($request->route()->getName(), $excludedRoutes)) {
+                if (isset($user->two_factor_key)) {
+                    return response()->json(['message' => 'Access denied due to your status'], 401);
+                }
+            }
+
             // Attach user to request
             $request->merge(['auth_user' => $user]);
-
         } catch (Exception $e) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
