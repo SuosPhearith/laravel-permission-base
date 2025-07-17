@@ -14,7 +14,8 @@ class Permission extends Model
 
     protected $fillable = [
         'name',
-        'is_active'
+        'is_active',
+        'module_id'
     ];
 
     protected function casts(): array

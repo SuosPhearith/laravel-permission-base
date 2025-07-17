@@ -41,15 +41,11 @@ class AuthController extends Controller
         }
 
         if ($user->enable_2fa) {
-            // Generate random key and store it temporarily
-            $key = Str::random(64);
+            $randomKey = Str::random(32);
+            $expiresAt = now()->addMinutes(10)->timestamp;
+            $key = "{$randomKey}-{$expiresAt}";
             $user->two_factor_key = $key;
             $user->save();
-
-            return response()->json([
-                'verify' => true,
-                'two_factor_key' => $key,
-            ]);
         }
 
         // 2FA not enabled, issue token immediately
@@ -63,9 +59,10 @@ class AuthController extends Controller
             'last_activity' => now()->timestamp,
         ]);
         return response()->json([
-            'verify' => false,
+            'verify' => $user->enable_2fa ? true : false,
             'access_token' => $token,
             'token_type' => 'bearer',
+            'two_factor_key' => $key ?? null,
         ]);
     }
 
@@ -156,9 +153,10 @@ class AuthController extends Controller
             $navigator[] = [
                 'title' => 'User',
                 'to' => ['name' => 'users'],
-                'icon' => ['icon' => 'tabler-user-circle'],
+                'icon' => ['icon' => 'tabler-users'],
             ];
         }
+
 
         if ($allPermissions->contains('view-setting')) {
             $children = [];
@@ -185,6 +183,14 @@ class AuthController extends Controller
             }
         }
 
+        if ($allPermissions->contains('view-users')) {
+            $navigator[] = [
+                'title' => 'Account',
+                'to' => ['name' => 'account'],
+                'icon' => ['icon' => 'tabler-user-circle'],
+            ];
+        }
+
         return response()->json([
             'user' => $user,
             'permissions' => $allPermissions,
@@ -200,7 +206,7 @@ class AuthController extends Controller
             //:::::::::::::::::::::::::::::::::::: VALIDATE
             $validated = $request->validate([
                 'name'         => 'required|string|min:1|max:100',
-                'avatar'       => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+                'avatar'       => 'nullable|image|mimes:jpg,jpeg,png|max:10000',
                 'email'        => [
                     'required',
                     'string',
@@ -252,6 +258,46 @@ class AuthController extends Controller
         }
     }
 
+    public function changePassword(Request $request)
+    {
+        try {
+            //:::::::::::::::::::::::::::::::::::: VALIDATE
+            $validated = $request->validate([
+                'current_password' => 'required|string',
+                'new_password' => 'required|string|min:6|confirmed',
+            ]);
+
+            $user = JWTAuth::parseToken()->authenticate();
+
+            //:::::::::::::::::::::::::::::::::::: CHECK CURRENT PASSWORD
+            if (!Hash::check($validated['current_password'], $user->password)) {
+                return response()->json(['error' => 'Current password is incorrect'], 400);
+            }
+
+            DB::beginTransaction();
+
+            //:::::::::::::::::::::::::::::::::::: UPDATE PASSWORD
+            $user->password = Hash::make($validated['new_password']);
+            $user->save();
+
+            DB::commit();
+
+            return response()->json(['message' => 'Password updated successfully']);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error($e);
+            return response()->json([
+                'error' => 'Failed to update password'
+            ], 500);
+        }
+    }
+
+
 
     //::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: 2FA WITH GOOGLE
 
@@ -260,25 +306,77 @@ class AuthController extends Controller
         $user = JWTAuth::parseToken()->authenticate();
         $google2fa = new Google2FA();
 
-        // Generate and store secret
+        // Generate secret key
         $secret = $google2fa->generateSecretKey();
-        $user->google2fa_secret = $secret;
-        $user->enable_2fa = true;
-        $user->save();
 
-        // Generate QR code URL
+        $user->update([
+            'temp_2fa_secret' => $secret
+        ]);
+
+        // Generate QR Code URL
         $qrCodeUrl = $google2fa->getQRCodeUrl(
             'PHARMACY - CALMETTE',
             $user->email,
             $secret
         );
 
+        return response()->json([
+            'otpauth_url' => $qrCodeUrl,
+        ]);
+    }
+
+    public function verifySetup(Request $request)
+    {
+        $request->validate([
+            'otp' => 'required|string',
+        ]);
+
+        $user = JWTAuth::parseToken()->authenticate();
+        $google2fa = new Google2FA();
+
+        $tempSecret = $user->temp_2fa_secret;
+
+        if (!$tempSecret) {
+            return response()->json([
+                'error' => 'Temporary 2FA secret not found.',
+            ], 400);
+        }
+
+        $isValid = $google2fa->verifyKey($tempSecret, $request->otp);
+
+        if (!$isValid) {
+            return response()->json([
+                'error' => 'Invalid verification code.',
+            ], 422);
+        }
+
+        // Set permanent 2FA fields on user
+        $user->google2fa_secret = $tempSecret;
+        $user->enable_2fa = true;
+        $user->temp_2fa_secret = null;
+        $user->save();
+
         DB::table('sessions')->where('user_id', $user->id)->delete();
 
         return response()->json([
-            'otpauth_url' => $qrCodeUrl
+            'message' => '2FA setup successful.',
         ]);
     }
+
+    public function disable2FA()
+    {
+        $user = JWTAuth::parseToken()->authenticate();
+        $user->update([
+            'enable_2fa' => false,
+            'temp_2fa_secret' => null,
+            'google2fa_secret' => null
+        ]);
+
+        return response()->json([
+            'message' => '2FA disable successful.',
+        ]);
+    }
+
 
     public function verify2FA(Request $request)
     {
@@ -300,23 +398,40 @@ class AuthController extends Controller
             return response()->json(['message' => 'Invalid OTP'], 422);
         }
 
-        // OTP valid — clear key and issue token
-        $user->two_factor_key = null;
-        $user->save();
+        [$actualKey, $timestamp] = explode('-', $request->two_factor_key);
 
-        $token = JWTAuth::fromUser($user);
-        DB::table('sessions')->insert([
-            'id' => Str::uuid()->toString(),
-            'user_id' => $user->id,
-            'ip_address' => $request->ip(),
-            'user_agent' => $request->userAgent(),
-            'payload' => '',
-            'last_activity' => now()->timestamp,
-        ]);
-        return response()->json([
-            'message' => '2FA verified successfully',
-            'access_token' => $token,
-            'token_type' => 'bearer',
-        ]);
+        if (now()->timestamp > (int) $timestamp) {
+            return response()->json(['message' => '2FA key has expired'], 401);
+        }
+
+        // Transaction: clear key, save user, create session
+        try {
+            DB::beginTransaction();
+
+            $user->two_factor_key = null;
+            $user->save();
+
+            $token = JWTAuth::fromUser($user);
+
+            DB::table('sessions')->insert([
+                'id' => Str::uuid()->toString(),
+                'user_id' => $user->id,
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+                'payload' => '',
+                'last_activity' => now()->timestamp,
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'message' => '2FA verified successfully',
+                'access_token' => $token,
+                'token_type' => 'bearer',
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['message' => 'Something went wrong during 2FA verification'], 500);
+        }
     }
 }

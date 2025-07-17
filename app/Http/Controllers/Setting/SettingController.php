@@ -65,6 +65,73 @@ class SettingController extends Controller
         return response()->json(['data' => $data], 200);
     }
 
+    public function createPermission(Request $request, Module $module)
+    {
+        try {
+            //:::::::::::::::::::::::::::::::::::: VALIDATE
+            $validated = $request->validate([
+                'permissions' => 'required|array|min:1',
+                'permissions.*.name' => 'required|string|min:1|max:100',
+            ]);
+
+            DB::beginTransaction();
+
+            foreach ($validated['permissions'] as $perm) {
+                Permission::create([
+                    'name' => $perm['name'],
+                    'module_id' => $module->id,
+                ]);
+            }
+
+            DB::commit();
+
+            return response()->json(['message' => 'Permissions created successfully']);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error($e);
+            return response()->json([
+                'error' => 'Failed to create permissions'
+            ], 500);
+        }
+    }
+
+    public function createModule(Request $request)
+    {
+        try {
+            //:::::::::::::::::::::::::::::::::::: VALIDATE
+            $validated = $request->validate([
+                'name'              => 'required|string|min:1|max:150',
+            ]);
+
+            //:::::::::::::::::::::::::::::::::::: CREATE
+            Module::create([
+                'name'          => $validated['name'],
+            ]);
+
+            return response()->json(['message' => 'Created successfully']);
+        } catch (ValidationException $e) {
+            return response()->json(
+                [
+                    'success' => false,
+                    'errors' => $e->errors()
+                ],
+                422
+            );
+        } catch (\Exception $e) {
+            Log::error($e);
+            return response()->json(
+                [
+                    'error' => 'Failed to create'
+                ],
+                500
+            );
+        }
+    }
 
     public function listRole(Request $request)
     {
@@ -332,16 +399,44 @@ class SettingController extends Controller
         }
     }
 
+    public function deletePermission(Permission $permission)
+    {
+        try {
+
+            //:::::::::::::::::::::::::::::::::::: update
+            $permission->delete();
+            return response()->json(['message' => 'Deleted successfully']);
+        } catch (ValidationException $e) {
+            return response()->json(
+                [
+                    'success' => false,
+                    'errors' => $e->errors()
+                ],
+                422
+            );
+        } catch (\Exception $e) {
+            Log::error($e);
+            return response()->json(
+                [
+                    'error' => 'Failed to create'
+                ],
+                500
+            );
+        }
+    }
+
     public function listModule()
     {
         $modules = Module::select(['id', 'name', 'is_active'])
             ->with(['permissions:id,name,is_active,module_id'])
+            ->orderBy('id', 'desc') // ✅ Correct query builder usage
             ->get();
 
         return response()->json([
             'data' => $modules
         ], 200);
     }
+
 
     public function toggleModule(Module $module)
     {
@@ -371,6 +466,36 @@ class SettingController extends Controller
         }
     }
 
+    public function deleteModule(Module $module)
+    {
+        try {
+            //:::::::::::::::::::::::::::::::::::: delete all related permissions
+            $module->permissions()->delete();
+
+            //:::::::::::::::::::::::::::::::::::: delete the module
+            $module->delete();
+
+            return response()->json(['message' => 'Deleted successfully']);
+        } catch (ValidationException $e) {
+            return response()->json(
+                [
+                    'success' => false,
+                    'errors' => $e->errors()
+                ],
+                422
+            );
+        } catch (\Exception $e) {
+            Log::error($e);
+            return response()->json(
+                [
+                    'error' => 'Failed to delete'
+                ],
+                500
+            );
+        }
+    }
+
+
     public function setup(Request $request)
     {
         //:::::::::::::::::::::::::::::::::::: GET
@@ -381,6 +506,11 @@ class SettingController extends Controller
         //:::::::::::::::::::::::::::::::::::: CONDITIONAL
         if (in_array('role', $selects)) {
             $data['roles'] = Role::select(['id', 'name'])->get();
+        }
+
+        //:::::::::::::::::::::::::::::::::::: CONDITIONAL
+        if (in_array('module', $selects)) {
+            $data['modules'] = Module::select(['id', 'name'])->get();
         }
 
         return response()->json([

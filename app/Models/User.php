@@ -30,6 +30,7 @@ class User extends Authenticatable implements JWTSubject
         'google2fa_secret',
         'two_factor_verified_at',
         'two_factor_key',
+        'temp_2fa_secret',
         'created_by',
         'updated_by',
         'deleted_by',
@@ -39,7 +40,8 @@ class User extends Authenticatable implements JWTSubject
         'password',
         'remember_token',
         'google2fa_secret',
-        'two_factor_key'
+        'two_factor_key',
+        'temp_2fa_secret'
     ];
 
     protected function casts(): array
