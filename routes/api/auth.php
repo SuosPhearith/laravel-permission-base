@@ -12,6 +12,8 @@ Route::put('change-password',           [AuthController::class, 'changePassword'
 //::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: 2FA
 
 Route::post('/2fa/setup',               [AuthController::class, 'setup2FA']);
+Route::post('/2fa/verify-setup',        [AuthController::class, 'verifySetup']);
+Route::delete('/2fa/disable-2fa',       [AuthController::class, 'disable2FA']);
 Route::post('/2fa/verify',              [AuthController::class, 'verify2FA'])->name('verify_2fa');
 
 

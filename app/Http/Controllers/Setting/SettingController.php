@@ -399,16 +399,44 @@ class SettingController extends Controller
         }
     }
 
+    public function deletePermission(Permission $permission)
+    {
+        try {
+
+            //:::::::::::::::::::::::::::::::::::: update
+            $permission->delete();
+            return response()->json(['message' => 'Deleted successfully']);
+        } catch (ValidationException $e) {
+            return response()->json(
+                [
+                    'success' => false,
+                    'errors' => $e->errors()
+                ],
+                422
+            );
+        } catch (\Exception $e) {
+            Log::error($e);
+            return response()->json(
+                [
+                    'error' => 'Failed to create'
+                ],
+                500
+            );
+        }
+    }
+
     public function listModule()
     {
         $modules = Module::select(['id', 'name', 'is_active'])
             ->with(['permissions:id,name,is_active,module_id'])
+            ->orderBy('id', 'desc') // ✅ Correct query builder usage
             ->get();
 
         return response()->json([
             'data' => $modules
         ], 200);
     }
+
 
     public function toggleModule(Module $module)
     {
@@ -437,6 +465,36 @@ class SettingController extends Controller
             );
         }
     }
+
+    public function deleteModule(Module $module)
+    {
+        try {
+            //:::::::::::::::::::::::::::::::::::: delete all related permissions
+            $module->permissions()->delete();
+
+            //:::::::::::::::::::::::::::::::::::: delete the module
+            $module->delete();
+
+            return response()->json(['message' => 'Deleted successfully']);
+        } catch (ValidationException $e) {
+            return response()->json(
+                [
+                    'success' => false,
+                    'errors' => $e->errors()
+                ],
+                422
+            );
+        } catch (\Exception $e) {
+            Log::error($e);
+            return response()->json(
+                [
+                    'error' => 'Failed to delete'
+                ],
+                500
+            );
+        }
+    }
+
 
     public function setup(Request $request)
     {

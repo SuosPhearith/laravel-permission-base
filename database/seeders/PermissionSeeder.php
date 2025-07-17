@@ -52,48 +52,49 @@ class PermissionSeeder extends Seeder
 
         //::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: Seed Permissions
         $permissions = [
-            ['name' => 'view-users',                'module_id' => $userModuleId], // GET /, /{user}
-            ['name' => 'create-users',              'module_id' => $userModuleId], // POST /
-            ['name' => 'edit-users',                'module_id' => $userModuleId], // PUT /{user}
-            ['name' => 'delete-users',              'module_id' => $userModuleId], // DELETE /{user}
-            ['name' => 'view-session-users',        'module_id' => $userModuleId], // GET /{user}/get-user-permission
-            ['name' => 'logout-users',              'module_id' => $userModuleId], // DELETE /{user}/logout
-            ['name' => 'reset-password-users',      'module_id' => $userModuleId], // PUT /{user}/reset-password
-            ['name' => 'ban-users',                 'module_id' => $userModuleId], // PUT /{user}/toggle-status
+            ['name' => 'view-users',                    'module_id' => $userModuleId],          // SETTING ::: MAIN
+            ['name' => 'create-users',                  'module_id' => $userModuleId], 
+            ['name' => 'edit-users',                    'module_id' => $userModuleId], 
+            ['name' => 'delete-users',                  'module_id' => $userModuleId], 
+            ['name' => 'view-session-users',            'module_id' => $userModuleId], 
+            ['name' => 'logout-users',                  'module_id' => $userModuleId], 
+            ['name' => 'reset-password-users',          'module_id' => $userModuleId], 
+            ['name' => 'ban-users',                     'module_id' => $userModuleId], 
 
-            ['name' => 'grant-permission-users',    'module_id' => $userModuleId], // POST /{user}/{permission}/add-permission
-            ['name' => 'update-permission-users',   'module_id' => $userModuleId], // PUT /{user}/update-permission
+            ['name' => 'grant-permission-users',        'module_id' => $userModuleId], 
+            ['name' => 'update-permission-users',       'module_id' => $userModuleId], 
 
-            ['name' => 'enable-2fa-users',          'module_id' => $userModuleId], // PUT /{user}/enable-2fa
-            ['name' => 'disable-2fa-users',         'module_id' => $userModuleId], // PUT /{user}/disable-2fa
+            ['name' => 'enable-2fa-users',              'module_id' => $userModuleId],
+            ['name' => 'disable-2fa-users',             'module_id' => $userModuleId], 
 
-            ['name' => 'view-setting', 'module_id' => $settingModuleId],                      // SETTING ::: MAIN
+            ['name' => 'view-setting', 'module_id' => $settingModuleId],                        // SETTING ::: MAIN
 
             // ROLE SETTING
-            ['name' => 'view-role-setting', 'module_id' => $settingModuleId],                // listRole ::: MAIN
-            ['name' => 'create-role-setting', 'module_id' => $settingModuleId],              // createRole
-            ['name' => 'update-role-setting', 'module_id' => $settingModuleId],              // updateRole
-            ['name' => 'delete-role-setting', 'module_id' => $settingModuleId],              // deleteRole
-            ['name' => 'toggle-role-setting', 'module_id' => $settingModuleId],              // toggleRole
-            ['name' => 'view-role-permission-setting', 'module_id' => $settingModuleId],     // getRoleWithPermission
-            ['name' => 'get-role-by-id-setting', 'module_id' => $settingModuleId],           // getRoleById
-
+            ['name' => 'view-role-setting',             'module_id' => $settingModuleId],       // ::: MAIN
+            ['name' => 'create-role-setting',           'module_id' => $settingModuleId],              
+            ['name' => 'update-role-setting',           'module_id' => $settingModuleId],              
+            ['name' => 'delete-role-setting',           'module_id' => $settingModuleId],             
+            ['name' => 'toggle-role-setting',           'module_id' => $settingModuleId],             
+            ['name' => 'view-role-permission-setting',  'module_id' => $settingModuleId],     
+            ['name' => 'get-role-by-id-setting',        'module_id' => $settingModuleId],          
             // PERMISSION SETTING
-            ['name' => 'view-permission-setting', 'module_id' => $settingModuleId],          // listPermission ::: MAIN
-            ['name' => 'toggle-permission-setting', 'module_id' => $settingModuleId],        // togglePermission
-            ['name' => 'create-permission-setting', 'module_id' => $settingModuleId],        // createPermission
+            ['name' => 'view-permission-setting',       'module_id' => $settingModuleId],       //  ::: MAIN
+            ['name' => 'toggle-permission-setting',     'module_id' => $settingModuleId],       
+            ['name' => 'delete-permission-setting',     'module_id' => $settingModuleId],       
+            ['name' => 'create-permission-setting',     'module_id' => $settingModuleId],        
 
             // MODULE SETTING
-            ['name' => 'view-module-setting', 'module_id' => $settingModuleId],              // listModule ::: MAIN
-            ['name' => 'create-module-setting', 'module_id' => $settingModuleId],            // createModule
-            ['name' => 'toggle-module-setting', 'module_id' => $settingModuleId],            // toggleModule
+            ['name' => 'view-module-setting',           'module_id' => $settingModuleId],       // ::: MAIN
+            ['name' => 'create-module-setting',         'module_id' => $settingModuleId],            
+            ['name' => 'toggle-module-setting',         'module_id' => $settingModuleId],            
+            ['name' => 'delete-module-setting',         'module_id' => $settingModuleId],            
 
             // SETUP
-            ['name' => 'view-config-setting', 'module_id' => $settingModuleId], // ::: MAIN
+            ['name' => 'view-config-setting',           'module_id' => $settingModuleId],       // ::: MAIN
 
-            ['name' => 'view-home',                         'module_id' => $homeModuleId],      // HOME ::: MAIN
+            ['name' => 'view-home',                     'module_id' => $homeModuleId],          // HOME ::: MAIN
 
-            ['name' => 'view-product',                      'module_id' => $productModuleId],   // PRODUCT ::: MAIN
+            ['name' => 'view-product',                  'module_id' => $productModuleId],       // PRODUCT ::: MAIN
         ];
 
         foreach ($permissions as $permission) {

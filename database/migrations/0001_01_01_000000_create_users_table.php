@@ -24,6 +24,7 @@ return new class extends Migration
             // :::::::::::::::::::::::::::::::::::::::::::::::: 2FA
             $table->boolean('enable_2fa')->default(false);
             $table->string("google2fa_secret")->nullable();
+            $table->string("temp_2fa_secret")->nullable();
             $table->timestamp("two_factor_verified_at")->nullable();
             $table->string('two_factor_key')->nullable();
             // :::::::::::::::::::::::::::::::::::::::::::::::: 2FA

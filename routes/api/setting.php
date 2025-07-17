@@ -34,6 +34,9 @@ Route::get('permission',                    [SettingController::class, 'listPerm
 // 🔒 toggle-permission-setting
 Route::put('permission/{permission}',       [SettingController::class, 'togglePermission'])->middleware('can:toggle-permission-setting');
 
+// 🔒 toggle-permission-setting
+Route::delete('permission/{permission}',    [SettingController::class, 'deletePermission'])->middleware('can:delete-permission-setting'); // not
+
 // 🔒 create-permission-setting
 Route::post('permission/{module}/create',   [SettingController::class, 'createPermission'])->middleware('can:create-permission-setting');
 
@@ -47,6 +50,9 @@ Route::post('module',                       [SettingController::class, 'createMo
 
 // 🔒 toggle-module-setting
 Route::put('module/{module}',               [SettingController::class, 'toggleModule'])->middleware('can:toggle-module-setting');
+
+// 🔒 toggle-module-setting
+Route::delete('module/{module}',            [SettingController::class, 'deleteModule'])->middleware('can:delete-module-setting'); // not
 
 //::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: SETUP
 
