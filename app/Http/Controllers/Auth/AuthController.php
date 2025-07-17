@@ -258,6 +258,74 @@ class AuthController extends Controller
         }
     }
 
+    public function changePassowrd(Request $request)
+    {
+        try {
+            //:::::::::::::::::::::::::::::::::::: VALIDATE
+            $validated = $request->validate([]);
+
+            $user = JWTAuth::parseToken()->authenticate();
+
+            DB::beginTransaction();
+
+
+            DB::commit();
+
+            return response()->json(['message' => 'Updated successfully']);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error($e);
+            return response()->json([
+                'error' => 'Failed to create permissions'
+            ], 500);
+        }
+    }
+
+    public function changePassword(Request $request)
+    {
+        try {
+            //:::::::::::::::::::::::::::::::::::: VALIDATE
+            $validated = $request->validate([
+                'current_password' => 'required|string',
+                'new_password' => 'required|string|min:6|confirmed',
+            ]);
+
+            $user = JWTAuth::parseToken()->authenticate();
+
+            //:::::::::::::::::::::::::::::::::::: CHECK CURRENT PASSWORD
+            if (!Hash::check($validated['current_password'], $user->password)) {
+                return response()->json(['error' => 'Current password is incorrect'], 403);
+            }
+
+            DB::beginTransaction();
+
+            //:::::::::::::::::::::::::::::::::::: UPDATE PASSWORD
+            $user->password = Hash::make($validated['new_password']);
+            $user->save();
+
+            DB::commit();
+
+            return response()->json(['message' => 'Password updated successfully']);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error($e);
+            return response()->json([
+                'error' => 'Failed to update password'
+            ], 500);
+        }
+    }
+
+
 
     //::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: 2FA WITH GOOGLE
 

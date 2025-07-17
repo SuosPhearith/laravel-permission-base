@@ -7,6 +7,7 @@ Route::get('me',                        [AuthController::class, 'me'])->name('me
 Route::post('logout',                   [AuthController::class, 'logout']);
 Route::delete('logout/{user}',          [AuthController::class, 'logoutUser']);
 Route::post('update-profile',           [AuthController::class, 'updateProfile']);
+Route::put('change-password',           [AuthController::class, 'changePassword']);
 
 //::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: 2FA
 
