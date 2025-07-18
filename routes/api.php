@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Setting\SettingController;
 use Illuminate\Support\Facades\Route;
 
 // :::::::::::::::::::::::::::::::::::::::::::::::::::::: RATE LIMIT 120 TIMES PER MINUTE
@@ -14,7 +15,7 @@ Route::middleware('throttle:120,1')->group(function () {
 
     Route::prefix('v1')->group(function () {
 
-        Route::post('auth/login',[AuthController::class, 'login'])->middleware('throttle:50,1');
+        Route::post('auth/login',       [AuthController::class, 'login'])->middleware('throttle:50,1');
 
         Route::middleware(['authentication.jwt.auth'])->group(function () {
             Route::prefix('pharmacy')->group(function () {
@@ -28,6 +29,9 @@ Route::middleware('throttle:120,1')->group(function () {
             });
             Route::prefix('setting')->group(function () {
                 require_once __DIR__ . '/api/setting.php';
+            });
+            Route::prefix('config')->group(function () {
+                require_once __DIR__ . '/api/config.php';
             });
         });
     });
