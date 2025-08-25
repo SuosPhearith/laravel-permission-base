@@ -239,7 +239,7 @@ class SettingController extends Controller
             Log::error($e);
             return response()->json(
                 [
-                    'error' => 'Failed to create'
+                    'error' => 'Failed to create' . $e
                 ],
                 500
             );

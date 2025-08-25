@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\Auth\Config;
 use App\Models\Auth\PermissionRole;
 use App\Models\Auth\UserPermission;
 use App\Models\Auth\UserRole;
@@ -21,6 +22,49 @@ use PragmaRX\Google2FA\Google2FA;
 
 class AuthController extends Controller
 {
+    public function register(Request $request)
+    {
+        try {
+            DB::beginTransaction();
+
+            //:::::::::::::::::::::::::::::::::::: VALIDATE
+            $validated = $request->validate([
+                'name'              => 'required|string|min:3|max:100',
+                'email'             => 'required|email|unique:users,email',
+                'phone_number'      => 'required|string|min:9|max:12|unique:users,phone_number',
+                'password'          => 'required|string|min:6|max:30',
+            ]);
+
+            //:::::::::::::::::::::::::::::::::::: CREATE USER
+            $newUser = User::create([
+                'name'              => $validated['name'],
+                'email'             => $validated['email'],
+                'phone_number'      => $validated['phone_number'],
+                'password'          => Hash::make($validated['password']),
+            ]);
+
+            //:::::::::::::::::::::::::::::::::::: ASSIGN ROLES TO USER
+            UserRole::create([
+                'user_id' => $newUser->id,
+                'role_id' => 2, // GUEST
+            ]);
+
+            DB::commit();
+
+            return response()->json(['message' => 'Created successfully'], 201);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'errors'  => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error($e);
+            return response()->json([
+                'error' => 'Failed to create'
+            ], 500);
+        }
+    }
 
     public function login(Request $request)
     {
@@ -183,7 +227,7 @@ class AuthController extends Controller
             }
         }
 
-        if ($allPermissions->contains('view-users')) {
+        if (true) {
             $navigator[] = [
                 'title' => 'Account',
                 'to' => ['name' => 'account'],
@@ -314,8 +358,9 @@ class AuthController extends Controller
         ]);
 
         // Generate QR Code URL
+        $configApp = Config::where('key', 'app_config')->first();
         $qrCodeUrl = $google2fa->getQRCodeUrl(
-            'PHARMACY - CALMETTE',
+            $configApp->value['app_name'] ?? "SYSTEM",
             $user->email,
             $secret
         );

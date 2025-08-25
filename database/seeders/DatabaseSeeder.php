@@ -29,7 +29,7 @@ class DatabaseSeeder extends Seeder
             'password'          => Hash::make('123456'),
         ]);
 
-        DB::table('user_role')->insertGetId(
+        DB::table('user_role')->insert(
             [
                 'role_id'   => 1,
                 'user_id'   => $user->id,
