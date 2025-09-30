@@ -194,7 +194,7 @@ class UserController extends Controller
             DB::rollBack();
             Log::error($e);
             return response()->json([
-                'error' => 'Failed to create'
+                'error' => 'Failed to create' . $e
             ], 500);
         }
     }

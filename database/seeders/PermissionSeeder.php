@@ -41,10 +41,10 @@ class PermissionSeeder extends Seeder
             ]
         );
 
-        $productModuleId = DB::table('modules')->insertGetId(
+        $exchangeModuleId = DB::table('modules')->insertGetId(
             [
                 'id'            => 4,
-                'name'          => 'Product Management',
+                'name'          => 'Exchange Management',
                 'created_at'    => Carbon::now(),
                 'updated_at'    => Carbon::now(),
             ]
@@ -54,7 +54,7 @@ class PermissionSeeder extends Seeder
         $permissions = [
             ['name' => 'view-home',                     'module_id' => $homeModuleId],          // HOME ::: MAIN
 
-            ['name' => 'view-product',                  'module_id' => $productModuleId],       // PRODUCT ::: MAIN
+            ['name' => 'view-exchange',                 'module_id' => $exchangeModuleId],      // EXCHANGE ::: MAIN
 
             ['name' => 'view-users',                    'module_id' => $userModuleId],          // SETTING ::: MAIN
             ['name' => 'create-users',                  'module_id' => $userModuleId],

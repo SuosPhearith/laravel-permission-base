@@ -16,7 +16,7 @@ class ConfigSeeder extends Seeder
         DB::table('config')->insert([
             'key' => 'app_config',
             'value' => json_encode([
-                'app_name' => 'SYSTEM',
+                'app_name' => 'BILLING',
                 'layout' => 'vertical',
                 'skin' => 'default',
             ]),

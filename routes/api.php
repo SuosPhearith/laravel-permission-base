@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Billing\ExchangeController;
 use App\Http\Controllers\Setting\SettingController;
 use Illuminate\Support\Facades\Route;
 
@@ -19,8 +20,8 @@ Route::middleware('throttle:120,1')->group(function () {
         Route::post('auth/register',    [AuthController::class, 'register'])->middleware('throttle:50,1');
 
         Route::middleware(['authentication.jwt.auth'])->group(function () {
-            Route::prefix('pharmacy')->group(function () {
-                require_once __DIR__ . '/api/pharmacy.php';
+            Route::prefix('billing')->group(function () {
+                require_once __DIR__ . '/api/billing.php';
             });
             Route::prefix('auth')->group(function () {
                 require_once __DIR__ . '/api/auth.php';
@@ -34,6 +35,10 @@ Route::middleware('throttle:120,1')->group(function () {
             Route::prefix('config')->group(function () {
                 require_once __DIR__ . '/api/config.php';
             });
+        });
+
+        Route::middleware(['apiKey'])->group(function () {
+            Route::get('/exchange-rate',     [ExchangeController::class, 'getExchangeRate']);
         });
     });
 

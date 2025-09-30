@@ -15,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'authentication.jwt.auth' => \App\Http\Middleware\Authentication::class,
             'can' => \App\Http\Middleware\Authorization::class,
+            'apiKey' => \App\Http\Middleware\ApiKeyMiddleware::class,
         ]);
         $middleware->append(\Illuminate\Http\Middleware\HandleCors::class);
     })

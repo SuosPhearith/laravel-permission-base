@@ -185,11 +185,11 @@ class AuthController extends Controller
             ];
         }
 
-        if ($allPermissions->contains('view-product')) {
+        if ($allPermissions->contains('view-exchange')) {
             $navigator[] = [
-                'title' => 'Product',
-                'to' => ['name' => 'products'],
-                'icon' => ['icon' => 'tabler-file'],
+                'title' => 'Exchange',
+                'to' => ['name' => 'exchanges'],
+                'icon' => ['icon' => 'tabler-coin'],
             ];
         }
 

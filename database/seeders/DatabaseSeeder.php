@@ -17,11 +17,12 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             PermissionSeeder::class,
-            ConfigSeeder::class
+            ConfigSeeder::class,
+            ExchangeRateSeeder::class,
         ]);
 
         $user = User::factory()->create([
-            'id'                => 1,
+            // 'id'                => 1,
             'name'              => 'SUOS PHEARITH',
             'email'             => 'suosphearith@gmail.com',
             'phone_number'      => '069265958',
